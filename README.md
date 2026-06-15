@@ -10,6 +10,10 @@
 
 ---
 
+## 🔗 Live Demo
+
+**[https://plexus-eight.vercel.app/](https://plexus-eight.vercel.app/)**
+
 </div>
 
 ## 📄 Cover Page
