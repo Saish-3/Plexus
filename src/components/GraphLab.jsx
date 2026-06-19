@@ -106,9 +106,9 @@ export function GraphLab({ height = 560 }) {
   };
 
   const exportCSV = () => {
-    let csv = "node,degree,closeness,betweenness,eigenvector\n";
+    let csv = "node,degree_raw,closeness_raw,betweenness_raw,eigenvector_raw\n";
     graph.nodes.forEach((n) => {
-      csv += `${n.id},${stats.deg[n.id].toFixed(4)},${stats.clo[n.id].toFixed(4)},${stats.bet[n.id].toFixed(4)},${stats.eig[n.id].toFixed(4)}\n`;
+      csv += `${n.id},${stats.deg[n.id]},${stats.clo[n.id].toFixed(4)},${stats.bet[n.id].toFixed(4)},${stats.eig[n.id].toFixed(4)}\n`;
     });
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a");
@@ -119,6 +119,10 @@ export function GraphLab({ height = 560 }) {
   const sorted = [...graph.nodes].sort((a, b) => scores[b.id] - scores[a.id]);
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
   const labels = { deg: "Degree", clo: "Closeness", bet: "Betweenness", eig: "Eigenvector" };
+  // Table/CSV headers spell out that these are raw, un-normalized metrics.
+  const rawLabels = { deg: "Degree (raw)", clo: "Closeness (raw)", bet: "Betweenness (raw)", eig: "Eigenvector (raw)" };
+  // Display raw values: integer degrees show as plain integers, the rest at 4dp.
+  const fmt = (k, v) => (k === "deg" ? String(v) : v.toFixed(4));
   const critical = [...graph.nodes].sort((a, b) => stats.bet[b.id] - stats.bet[a.id]).slice(0, 3);
 
   const chip = (active) => ({
@@ -204,7 +208,7 @@ export function GraphLab({ height = 560 }) {
                     strokeWidth={isSel || onPath ? 2.5 : 1.5} />
                   <text x={n.x} y={n.y - r - 7} textAnchor="middle"
                     fill={hovered === n.id ? T.ink : T.muted} fontSize="11" fontFamily={T.mono} fontWeight={hovered === n.id ? 600 : 400}>
-                    {n.id}{hovered === n.id ? ` · ${scores[n.id].toFixed(3)}` : ""}
+                    {n.id}{hovered === n.id ? ` · ${fmt(metric, scores[n.id])}` : ""}
                   </text>
                 </g>
               );
@@ -241,7 +245,7 @@ export function GraphLab({ height = 560 }) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: T.mono, fontSize: 12 }}>
             <thead>
               <tr style={{ position: "sticky", top: 0, background: T.bg, zIndex: 1 }}>
-                {["#", "Node", labels[metric]].map((h) => (
+                {["#", "Node", rawLabels[metric]].map((h) => (
                   <th key={h} style={{ textAlign: "left", padding: "9px 12px", color: T.muted, fontWeight: 500, borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr>
@@ -253,7 +257,7 @@ export function GraphLab({ height = 560 }) {
                   <td style={{ padding: "7px 12px", color: T.muted, borderBottom: `1px solid ${T.border}` }}>{i + 1}</td>
                   <td style={{ padding: "7px 12px", color: T.ink, borderBottom: `1px solid ${T.border}` }}>{n.id}</td>
                   <td style={{ padding: "7px 12px", color: rampColor(scores[n.id] / maxScore), fontWeight: 600, borderBottom: `1px solid ${T.border}` }}>
-                    {scores[n.id].toFixed(4)}
+                    {fmt(metric, scores[n.id])}
                   </td>
                 </tr>
               ))}

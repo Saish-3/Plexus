@@ -50,13 +50,15 @@ export function computeCentrality(nodes, edges) {
   ids.forEach((id) => { deg[id] = 0; clo[id] = 0; bet[id] = 0; eig[id] = 1; });
   let diameter = 0;
 
-  ids.forEach((id) => { deg[id] = N > 1 ? adj.get(id).size / (N - 1) : 0; });
+  // Raw degree: the actual number of incident edges (no /(N-1) normalization).
+  ids.forEach((id) => { deg[id] = adj.get(id).size; });
 
   ids.forEach((id) => {
     const d = bfsDistances(adj, id);
     let sum = 0;
     d.forEach((v) => { sum += v; if (v > diameter) diameter = v; });
-    clo[id] = sum > 0 ? (d.size - 1) / sum : 0;
+    // Raw closeness: 1 / Σ(distance), without the (reachable-1) size scaling.
+    clo[id] = sum > 0 ? 1 / sum : 0;
   });
 
   // Brandes' betweenness (unweighted)
@@ -84,10 +86,15 @@ export function computeCentrality(nodes, edges) {
       if (w !== s) bet[w] += delta.get(w);
     }
   });
-  const norm = N > 2 ? (N - 1) * (N - 2) : 1;
-  ids.forEach((id) => { bet[id] /= norm; });
+  // Raw betweenness: the count of shortest paths passing through each node.
+  // We drop the (N-1)(N-2) normalization. The /2 is NOT normalization — it
+  // corrects the double-count inherent to undirected Brandes (every pair is
+  // accumulated once from each endpoint as source), recovering the true count.
+  ids.forEach((id) => { bet[id] /= 2; });
 
-  // Eigenvector — power iteration
+  // Eigenvector — power iteration. The per-iteration /max is intrinsic to the
+  // solver (it keeps the vector bounded as it converges), not a display-time
+  // normalization, so it stays — this IS the raw score the algorithm produces.
   for (let it = 0; it < 100; it++) {
     const next = {}; let max = 0;
     ids.forEach((id) => {
